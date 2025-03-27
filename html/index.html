@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Chat</title>
+        <meta charset="UTF-8">
+        <script>
+            var messages = []
+            function refreshMessageList() {
+                console.log(messages)
+                msgsElement = document.getElementById('msgs')
+
+                while (msgsElement.firstChild) {
+                    msgsElement.removeChild(msgsElement.firstChild)
+                }
+
+                messages.forEach(m => {
+                    const div = document.createElement('div')
+                    
+                    const statusStyles = {
+                        'submitted': 'color: orange',
+                        'registered': 'color: green',
+                        '_default': 'color: red'
+                    }
+
+                    div.style = statusStyles[m.status] || statusStyles._default
+
+                    div.textContent = m.text
+                    msgsElement.appendChild(div)
+                })
+            }
+        </script>
+    </head>
+    <body>
+        <script>
+            function handle_message(message) {
+                const messageIndex = messages.findIndex(m => m.submissionId === message.submissionId)
+
+                if (messageIndex === -1)
+                    messages.push(message)
+                else
+                    messages[messageIndex] = message
+            }
+
+            async function post() {
+                const inp = document.getElementById('input')
+
+                const message = {
+                    submissionId: crypto.randomUUID(),
+                    text: inp.value,
+                    status: 'submitted'
+                }
+
+                try {
+                    const response = await fetch('/sse/post', {
+                        body: JSON.stringify(message),
+                        method: 'POST',
+                        headers: {'Content-type': 'application/json'}
+                    })
+                    
+                    returnedMsg = await response.json()
+
+                    handle_message(returnedMsg)
+
+                    refreshMessageList()
+
+                    // ✓
+                    inp.value = ''
+                } catch(e) {
+                    window.alert(e)
+                }
+            }
+
+            const evtSource = new EventSource("/sse/events")
+            evtSource.addEventListener("message", function(event) {
+                console.log("status", event)
+                handle_message(JSON.parse(event.data))
+                refreshMessageList()
+            })
+        </script>
+
+        <div id="msgs">
+        </div>
+
+        <form action="/sse/post" method="post">
+            <input id='input'
+                onkeypress="
+                    if (event.keyCode == 13) {
+                        post()
+                        event.preventDefault()
+                    }
+                "
+            ></input>
+            <button id='postButton' type="button" onclick="post()">
+                ➤
+            </button>
+        </form>
+    </body>
+</html>
