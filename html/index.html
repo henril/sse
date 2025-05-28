@@ -6,34 +6,52 @@
         <script>
             var messages = []
             function refreshMessageList() {
-                console.log(messages)
+                //console.log(messages)
                 msgsElement = document.getElementById('msgs')
 
                 while (msgsElement.firstChild) {
                     msgsElement.removeChild(msgsElement.firstChild)
                 }
 
-                messages.forEach(m => {
+                messages.forEach(message => {
                     const div = document.createElement('div')
-                    
+
                     const statusStyles = {
                         'submitted': 'color: orange',
                         'registered': 'color: green',
                         '_default': 'color: red'
                     }
 
-                    div.style = statusStyles[m.status] || statusStyles._default
+                    div.style = statusStyles[message.status] || statusStyles._default
 
-                    div.textContent = m.text
+                    div.style += ';margin-bottom: 20px'
+
+                    const date = new Date(message.registered_at * 1000)
+                    const hms = [date.getHours(), date.getMinutes(), date.getSeconds()]
+                    const [h, m, s] = hms.map(i => String(i).padStart(2, '0'))
+
+                    const timestamp = document.createElement('span')
+                    timestamp.style = 'background-color: lightgreen; padding: 5px; border-radius: 5px'
+                    timestamp.textContent = `${h}:${m}:${s}`
+
+                    const text = document.createElement('span')
+                    text.style = 'margin-left: 10px'
+                    text.textContent = message.text
+
+                    div.appendChild(timestamp)
+                    div.appendChild(text)
+
                     msgsElement.appendChild(div)
                 })
+
+                msgsElement.scrollTop = msgsElement.scrollHeight
             }
         </script>
     </head>
     <body>
         <script>
             function handle_message(message) {
-                const messageIndex = messages.findIndex(m => m.submissionId === message.submissionId)
+                const messageIndex = messages.findIndex(m => m.submission_id === message.submission_id)
 
                 if (messageIndex === -1)
                     messages.push(message)
@@ -45,7 +63,7 @@
                 const inp = document.getElementById('input')
 
                 const message = {
-                    submissionId: crypto.randomUUID(),
+                    submission_id: crypto.randomUUID(),
                     text: inp.value,
                     status: 'submitted'
                 }
@@ -63,7 +81,6 @@
 
                     refreshMessageList()
 
-                    // ✓
                     inp.value = ''
                 } catch(e) {
                     window.alert(e)
@@ -78,10 +95,10 @@
             })
         </script>
 
-        <div id="msgs">
+        <div id="msgs" style="font-family: monospace; overflow: scroll; overflow-x: hidden; height: 400px; width: 500px">
         </div>
 
-        <form action="/sse/post" method="post">
+        <form action="/sse/post" method="post" style="margin-top: 5px">
             <input id='input'
                 onkeypress="
                     if (event.keyCode == 13) {
@@ -89,6 +106,8 @@
                         event.preventDefault()
                     }
                 "
+
+                style='width: 460px'
             ></input>
             <button id='postButton' type="button" onclick="post()">
                 ➤
