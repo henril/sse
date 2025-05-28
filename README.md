@@ -1,1 +1,1 @@
-A simple chat application for experimenting with server-side events.
+A simple chat application for experimenting with server-sent events.
